@@ -1,0 +1,136 @@
+import sys  
+import random  
+import math  
+  
+  
+def bestsplit(data, labels, col):  
+    column_values = {}  
+    index = []  
+    rows = 0  
+    minus = 0  
+    for i in range(0, len(data), 1):  
+        if(labels.get(i) != None):  
+            column_values[i] = data[i][col]  
+            index.append(i)  
+            rows += 1  
+            if(labels[i] == 0):  
+                minus += 1  
+    sorted_index = sorted(index, key=column_values.__getitem__)  
+  
+    l_size = 1  
+    rsize = rows - 1  
+    lp = 0  
+    rp = minus  
+    if(labels[sorted_index[0]] == 0):  
+        lp += 1  
+        rp -= 1  
+  
+    best_s = -1  
+    bestgini = 10000  
+    for i in range(1, len(sorted_index), 1):  
+        s = (column_values[sorted_index[i]] + column_values[sorted_index[i-1]])/2  
+        gini = (l_size/rows)*(lp/l_size)*(1 - lp/l_size) + (rsize/rows)*(rp/rsize)*(1 - rp/rsize)
+        if(gini < bestgini):  
+            bestgini = gini  
+            best_s = s  
+        if(labels[sorted_index[i]] == 0):  
+            lp += 1  
+            rp -= 1  
+        l_size += 1  
+        rsize -= 1  
+  
+    return(best_s, bestgini)  
+  
+  
+datafile = sys.argv[1]  
+f = open(datafile)  
+#f = open("C:/Users/Kusuma/OneDrive/Documents/ionosphere.data", 'r')  
+data = []  
+i = 0  
+l = f.readline()  
+  
+while (l != ''):  
+    l = l.strip('\n')  
+    a = l.split()  
+    l2 = []  
+    for j in range(0, len(a), 1):  
+        l2.append(float(a[j]))  
+    data.append(l2)  
+    l = f.readline()  
+rows = len(data)  
+cols = len(data[0])  
+f.close()  
+  
+  
+labelfile = sys.argv[2]  
+f = open(labelfile)  
+#f = open("C:/Users/Kusuma/OneDrive/Documents/ionosphere.trainlabels.0", 'r')  
+trainlabels = {}  
+n = []  
+n.append(0)  
+n.append(0)  
+l = f.readline()  
+while(l != ''):  
+    a = l.split()  
+    trainlabels[int(a[1])] = int(a[0])  
+    l = f.readline()  
+    n[int(a[0])] += 1  
+f.close()  
+  
+  
+iterations = 100  
+predictions = {}  
+for i in range(0, rows, 1):  
+    if(trainlabels.get(i) == None):  
+        predictions[i] = 0  
+  
+for k in range(0, iterations, 1):  
+    i = 0  
+    iter_data = []  
+    iter_trainlabels = {}  
+    while(i < len(data)):  
+        r = random.randint(0, rows-1)  
+        if(trainlabels.get(r) != None):  
+            iter_data.append(data[r])  
+            iter_trainlabels[i] = trainlabels[r]  
+            i += 1  
+  
+    best_split = -1  
+    best_col = -1  
+    best_gini = 100000  
+    for j in range(0, cols, 1):  
+        [s, gini] = bestsplit(iter_data, iter_trainlabels, j)  
+        if(gini < best_gini):  
+            best_gini = gini  
+            best_split = s  
+            best_col = j  
+  
+    m = 0  
+    p = 0  
+    for i in range(0, rows, 1):  
+        if(trainlabels.get(i) != None):  
+            if(data[i][best_col] < best_split):  
+                if(trainlabels[i] == 0):  
+                    m += 1  
+                else:  
+                    p += 1  
+    if(m > p):  
+        left = -1  
+        right = 1  
+    else:  
+        left = 1  
+        right = -1  
+  
+    for i in range(0, rows, 1):  
+        if(trainlabels.get(i) == None):  
+            if(data[i][best_col] < best_split):  
+                predictions[i] += left  
+            else:  
+                predictions[i] += right  
+  
+for i in range(0, rows, 1):  
+    if(trainlabels.get(i) == None):  
+        if(predictions[i] > 0):  
+            print("1 ", i)  
+        else:  
+            print("0 ", i)
