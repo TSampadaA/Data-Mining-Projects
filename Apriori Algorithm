@@ -1,0 +1,212 @@
+import itertools
+import sys
+
+#   This function result into the first candidate set from the dataset given.
+def MinSupport(dataColl):
+    prodDic = {}
+    retrnset  = []
+    for data in dataColl:
+        for Prod in data:
+            if Prod not in prodDic:
+               prodDic[Prod] = 1
+            else:
+                 prodDic[Prod] = prodDic[Prod] + 1
+    for key in prodDic:
+        temparray = []
+        temparray.append(key)
+        retrnset .append(temparray)
+        retrnset .append(prodDic[key])
+        temparray = []
+    return retrnset
+
+
+
+
+#   After taking candidate set as an input, the next function create the Frequency item-sets. This function calls generateCandidatSets by providing the output of the present function as the input of the other function at the end.
+def CreateFreqSet(candidatelist, TransactionCount, sup, dataColl, predecessorFreqArray):
+    FreqitemArray = []
+    for i in range(len(candidatelist)):
+        if i%2 != 0:
+            support = (candidatelist[i] * 1.0 / TransactionCount) * 100
+            if support >= sup:
+                FreqitemArray.append(candidatelist[i-1])
+                FreqitemArray.append(candidatelist[i])
+            else:
+                eleminatedArray.append(candidatelist[i-1])
+
+    for k in FreqitemArray:
+        predecessorFreqArray.append(k)
+
+    if len(FreqitemArray) == 2 or len(FreqitemArray) == 0:
+        rtrnArray = predecessorFreqArray
+        return rtrnArray
+
+    else:
+        GenCandidateSets(dataColl, eleminatedArray, FreqitemArray, TransactionCount, sup)
+
+#   After taking frequent itemsets as input, the function creates candidate set. This function calls CreateFreqSets by providing the output of the present function as the input of the other function at the end.
+def GenCandidateSets(dataColl, eleminatedArray, FreqitemArray, TransactionCount, sup):
+    OnlyElmnt = []
+    ArrayAfterMerging = []
+    CandidArray = []
+    for i in range(len(FreqitemArray)):
+        if i%2 == 0:
+            OnlyElmnt.append(FreqitemArray[i])
+    for item in OnlyElmnt:
+        tempmergedArray = []
+        k = OnlyElmnt.index(item)
+        for i in range(k + 1, len(OnlyElmnt)):
+            for j in item:
+                if j not in tempmergedArray:
+                    tempmergedArray.append(j)
+            for m in OnlyElmnt[i]:
+                if m not in tempmergedArray:
+                    tempmergedArray.append(m)
+            ArrayAfterMerging.append(tempmergedArray)
+            tempmergedArray = []
+    SortedArray = []
+    UniqueArray = []
+    for i in ArrayAfterMerging:
+        SortedArray.append(sorted(i))
+    for i in SortedArray:
+        if i not in UniqueArray:
+            UniqueArray.append(i)
+    ArrayAfterMerging = UniqueArray
+    for item in ArrayAfterMerging:
+        count = 0
+        for transaction in dataColl:
+            if set(item).issubset(set(transaction)):
+                count = count + 1
+        if count != 0:
+            CandidArray.append(item)
+            CandidArray.append(count)
+    CreateFreqSet(CandidArray, TransactionCount, sup, dataColl, predecessorFreqArray)
+
+
+
+
+#   This function takes all the frequent sets as the input  Generates Association Rules by  taking all the frequent sets as inputs.
+def AssocRule(freqSet):
+    AssociationRule = []
+    for Item in freqSet:
+        if isinstance(Item, list):
+            if len(Item) != 0:
+                length = len(Item) - 1
+                while length > 0:
+                    combinations = list(itertools.combinations(Item, length))
+                    tempo = []
+                    leftSide = []
+                    for Rightside in combinations:
+                        leftSide = set(Item) - set(Rightside)
+                        tempo.append(list(leftSide))
+                        tempo.append(list(Rightside))
+                        AssociationRule.append(tempo)
+                        tempo = []
+                    length = length - 1
+    return AssociationRule
+
+
+#    The final output of this algorithm is created by taking Association Rules as the input in this function
+def Apriori(rules, dataColl, sup, conf):
+    retrnApriori = []
+    for rule in rules:
+        supportX = 0
+        supportXinPercentage = 0
+        supportXandY = 0
+        supportXandYinPercentage = 0
+        for transaction in dataColl:
+            if set(rule[0]).issubset(set(transaction)):
+                supportX = supportX + 1
+            if set(rule[0] + rule[1]).issubset(set(transaction)):
+                supportXandY = supportXandY + 1
+        supportXinPercentage = (supportX * 1.0 / TransactionCount) * 100
+        supportXandYinPercentage = (supportXandY * 1.0 / TransactionCount) * 100
+        confidence = (supportXandYinPercentage / supportXinPercentage) * 100
+        if confidence >= conf:
+            supportXAppendString = "Support Of X: " + str(round(supportXinPercentage, 2))
+            supportXandYAppendString = "Support of X & Y: " + str(round(supportXandYinPercentage))
+            confidenceAppendString = "Confidence: " + str(round(confidence))
+
+            retrnApriori.append(supportXAppendString)
+            retrnApriori.append(supportXandYAppendString)
+            retrnApriori.append(confidenceAppendString)
+            retrnApriori.append(rule)
+
+    return retrnApriori
+
+# Taking input of required database:
+print("Select from the following dataset:")
+print("Database (1)")
+print("Database (2)")
+print("Database (3)")
+print("Database (4)")
+print("Database (5)")
+print("\n")
+cmdline = input("Enter database number you want to work with: ")
+val = ""
+cmdline = int(cmdline)
+if(cmdline>5):
+	print("Only values from 1-5 expected. Try again")
+	sys.exit()
+elif cmdline == 1:
+	val = "Database1.txt"
+elif cmdline == 2:
+	val = "Database2.txt"
+elif cmdline == 3:
+	val = "Database3.txt"
+elif cmdline == 4:
+	val = "Database4.txt"
+elif cmdline == 5:
+	val = "Database5.txt"
+	
+sup = input('Enter minimum support percent from 0 to 100: ')
+if(sup == ""):
+	print("Invalid Entry. Please enter a value")
+	sys.exit()
+	
+conf = input('Enter minimum confidence percent from 0 to 100: ')
+if(conf == ""):
+	print("Invalid Entry. Please enter a value")
+	sys.exit()
+	
+print("\n")
+	
+sup = int(sup)
+conf = int(conf)
+
+dataColl = []
+eleminatedArray = []
+TransactionCount = 0
+predecessorFreqArray = []
+
+
+#Reading the database line by line
+with open(val,'r') as file:
+    lines = file.readlines()
+
+for line in lines:
+    line = line.rstrip()
+    dataColl.append(line.split(","))
+
+TransactionCount = len(dataColl)
+
+origSet = MinSupport(dataColl)
+
+FreqSet = CreateFreqSet(origSet, TransactionCount, sup, dataColl, predecessorFreqArray)
+
+AssocRule = AssocRule(predecessorFreqArray)
+
+Aprioriutput = Apriori(AssocRule, dataColl, sup, conf)
+
+
+counter = 1
+if len(Aprioriutput) == 0:
+    print("There are no association rules for this support and confidence provided by the user.")
+else:
+    for i in Aprioriutput:
+        if counter == 4:
+            print(str(i[0]) + "=====>" + str(i[1]))
+            counter = 0
+        else:
+            print(i, end='  ')
+        counter = counter + 1
